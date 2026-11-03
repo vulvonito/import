@@ -27,7 +27,7 @@
             <div class="p-6 space-y-4">
                 <div id="loginError" class="hidden p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs flex items-center gap-2">
                     <i class="fa-solid fa-triangle-exclamation"></i>
-                    <span>Invalid username or password. Please try again.</span>
+                    <span id="loginErrorMsg">Invalid username or password. Please try again.</span>
                 </div>
 
                 <div>
@@ -77,10 +77,10 @@
                         <i class="fa-solid fa-user-circle text-indigo-300"></i>
                         <span>User: <strong id="currentUserDisplay" class="text-white capitalize"></strong> <span id="roleBadge" class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-indigo-900 font-semibold uppercase"></span></span>
                     </div>
-                    <div id="dbStatusBadge" class="hidden sm:flex items-center gap-2 bg-indigo-800/80 px-3 py-1.5 rounded-lg border border-indigo-600/50 text-xs">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span>IndexedDB Ready</span>
-                    </div>
+                    <!-- Admin Settings Button -->
+                    <button id="settingsBtn" onclick="openSettingsModal()" class="hidden bg-indigo-800 hover:bg-indigo-900 text-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-600/50 text-xs flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-gear"></i> Settings
+                    </button>
                     <button onclick="handleLogout()" class="bg-indigo-800 hover:bg-indigo-900 text-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-600/50 text-xs flex items-center gap-1.5 transition">
                         <i class="fa-solid fa-right-from-bracket"></i> Log Out
                     </button>
@@ -94,8 +94,7 @@
             <!-- Control Bar (File Upload & Actions) -->
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
                 <div class="flex items-center gap-3 flex-wrap">
-                    <!-- Admin Only File Select Button -->
-                    <label id="fileSelectWrapper" class="cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium px-4 py-2.5 rounded-lg border border-indigo-200 text-xs transition flex items-center gap-2 shadow-sm">
+                    <label class="cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium px-4 py-2.5 rounded-lg border border-indigo-200 text-xs transition flex items-center gap-2 shadow-sm">
                         <i class="fa-solid fa-file-excel text-emerald-600 text-base"></i>
                         <span>Select Excel / CSV File</span>
                         <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileSelect(event)">
@@ -103,15 +102,15 @@
                     <span id="fileNameDisplay" class="text-xs text-slate-500 italic">No file loaded</span>
                 </div>
 
-                <!-- Admin Controls -->
-                <div id="adminControls" class="flex items-center gap-2 flex-wrap">
-                    <button onclick="saveToDatabase()" id="saveDbBtn" disabled class="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium px-4 py-2.5 rounded-lg text-xs transition flex items-center gap-2 shadow-sm">
+                <!-- Actions Bar -->
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button onclick="saveToDatabase()" id="saveDbBtn" disabled class="hidden bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium px-4 py-2.5 rounded-lg text-xs transition items-center gap-2 shadow-sm">
                         <i class="fa-solid fa-floppy-disk"></i> Save to Local DB (<span id="recordCountBadge">0</span>)
                     </button>
                     <button onclick="exportToCSV()" id="exportCsvBtn" disabled class="bg-slate-800 hover:bg-slate-900 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium px-4 py-2.5 rounded-lg text-xs transition flex items-center gap-2 shadow-sm">
                         <i class="fa-solid fa-file-csv"></i> Export to .CSV
                     </button>
-                    <button onclick="clearDatabase()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 font-medium px-3 py-2.5 rounded-lg border border-rose-200 text-xs transition flex items-center gap-1.5">
+                    <button onclick="clearDatabase()" id="clearDbBtn" class="hidden bg-rose-50 hover:bg-rose-100 text-rose-700 font-medium px-3 py-2.5 rounded-lg border border-rose-200 text-xs transition items-center gap-1.5">
                         <i class="fa-solid fa-trash-can"></i> Clear Local DB
                     </button>
                 </div>
@@ -199,14 +198,54 @@
         </div>
     </div>
 
+    <!-- Admin Settings & User Management Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-xl shadow-xl border border-slate-200 overflow-hidden flex flex-col">
+            <div class="bg-indigo-700 text-white p-4 flex justify-between items-center">
+                <h3 class="font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-gear"></i> Admin Settings & User Management</h3>
+                <button onclick="closeSettingsModal()" class="text-indigo-200 hover:text-white text-base"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 space-y-4 text-xs">
+                <h4 class="font-bold text-slate-700 uppercase tracking-wide text-[10px]">Registered System Users</h4>
+                <div class="border border-slate-200 rounded-lg overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-slate-100 text-slate-600 uppercase text-[10px] border-b border-slate-200">
+                            <tr>
+                                <th class="p-2.5">Username</th>
+                                <th class="p-2.5">Role</th>
+                                <th class="p-2.5 text-center">Status</th>
+                                <th class="p-2.5 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userTableBody" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-[11px] text-slate-500 italic">Deactivating a user will prevent them from logging in or immediately log them out if active.</p>
+            </div>
+            <div class="p-3 bg-slate-50 border-t border-slate-200 text-right">
+                <button onclick="closeSettingsModal()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-medium">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Application Script -->
     <script>
-        // Accounts Configuration (Encoded passwords)
-        const VALID_USERS = {
-            "admin": "YWRtaW4xMjM=",  // admin / admin123
-            "user1": "cGFzc0A0NTY=",  // user1 / pass@456
-            "user2": "dXNlckBwYXNz"   // user2 / user@pass
-        };
+        // Initial Users Configuration with active status storage support
+        function getUsersConfig() {
+            const saved = localStorage.getItem('system_users');
+            if (saved) {
+                try { return JSON.parse(saved); } catch (e) {}
+            }
+            const defaults = {
+                "admin": { pass: "YWRtaW4xMjM=", role: "admin", active: true },
+                "user1": { pass: "cGFzc0A0NTY=", role: "user", active: true },
+                "user2": { pass: "dXNlckBwYXNz", role: "user", active: true }
+            };
+            localStorage.setItem('system_users', JSON.stringify(defaults));
+            return defaults;
+        }
 
         let allData = [];
         let filteredData = [];
@@ -227,31 +266,40 @@
         function checkAuth() {
             const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
             const currentUser = sessionStorage.getItem('currentUser');
+            const users = getUsersConfig();
             const loginModal = document.getElementById('loginModal');
             const appContainer = document.getElementById('appContainer');
 
-            if (isLoggedIn && currentUser && VALID_USERS[currentUser]) {
+            // Verify if user exists and is active
+            if (isLoggedIn && currentUser && users[currentUser] && users[currentUser].active) {
                 loginModal.classList.add('hidden');
                 appContainer.classList.remove('hidden');
                 
                 document.getElementById('currentUserDisplay').textContent = currentUser;
                 
-                // Configure UI based on Admin vs Standard User
-                const isAdmin = currentUser.toLowerCase() === 'admin';
+                const isAdmin = users[currentUser].role === 'admin';
                 document.getElementById('roleBadge').textContent = isAdmin ? 'Admin' : 'User';
                 
                 if (isAdmin) {
-                    document.getElementById('adminControls').classList.remove('hidden');
-                    document.getElementById('fileSelectWrapper').classList.remove('hidden');
+                    document.getElementById('saveDbBtn').classList.remove('hidden');
+                    document.getElementById('clearDbBtn').classList.remove('hidden');
+                    document.getElementById('settingsBtn').classList.remove('hidden');
                 } else {
-                    document.getElementById('adminControls').classList.add('hidden');
-                    document.getElementById('fileSelectWrapper').classList.add('hidden');
+                    document.getElementById('saveDbBtn').classList.add('hidden');
+                    document.getElementById('clearDbBtn').classList.add('hidden');
+                    document.getElementById('settingsBtn').classList.add('hidden');
                 }
 
                 loadFromIndexedDB();
             } else {
                 sessionStorage.removeItem('isLoggedIn');
                 sessionStorage.removeItem('currentUser');
+                
+                if (currentUser && users[currentUser] && !users[currentUser].active) {
+                    document.getElementById('loginErrorMsg').textContent = "This account has been deactivated by the administrator.";
+                    document.getElementById('loginError').classList.remove('hidden');
+                }
+                
                 loginModal.classList.remove('hidden');
                 appContainer.classList.add('hidden');
             }
@@ -261,10 +309,18 @@
             const userInput = document.getElementById('usernameInput').value.trim();
             const passInput = document.getElementById('passwordInput').value.trim();
             const errorDiv = document.getElementById('loginError');
+            document.getElementById('loginErrorMsg').textContent = "Invalid username or password. Please try again.";
 
-            if (VALID_USERS[userInput]) {
+            const users = getUsersConfig();
+
+            if (users[userInput]) {
+                if (!users[userInput].active) {
+                    document.getElementById('loginErrorMsg').textContent = "This account has been deactivated.";
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
                 try {
-                    const decodedPass = atob(VALID_USERS[userInput]);
+                    const decodedPass = atob(users[userInput].pass);
                     if (decodedPass === passInput) {
                         sessionStorage.setItem('isLoggedIn', 'true');
                         sessionStorage.setItem('currentUser', userInput);
@@ -287,6 +343,55 @@
             document.getElementById('usernameInput').value = '';
             document.getElementById('passwordInput').value = '';
             checkAuth();
+        }
+
+        // Settings & User Management Modal Functions
+        function openSettingsModal() {
+            renderUserTable();
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').classList.add('hidden');
+            checkAuth(); // Re-check validity in case current session state changed
+        }
+
+        function renderUserTable() {
+            const users = getUsersConfig();
+            const tbody = document.getElementById('userTableBody');
+            tbody.innerHTML = '';
+
+            Object.keys(users).forEach(username => {
+                const user = users[username];
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-100";
+                tr.innerHTML = `
+                    <td class="p-2.5 font-medium text-slate-800">${username}</td>
+                    <td class="p-2.5 uppercase font-semibold text-indigo-600">${user.role}</td>
+                    <td class="p-2.5 text-center">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${user.active ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+                            ${user.active ? 'ACTIVE' : 'DEACTIVATED'}
+                        </span>
+                    </td>
+                    <td class="p-2.5 text-center">
+                        ${username === 'admin' ? '<span class="text-slate-400 italic text-[10px]">Protected</span>' : `
+                            <button onclick="toggleUserStatus('${username}')" class="px-2.5 py-1 rounded text-[11px] font-medium transition ${user.active ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'}">
+                                ${user.active ? 'Deactivate' : 'Activate'}
+                            </button>
+                        `}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleUserStatus(username) {
+            let users = getUsersConfig();
+            if (users[username] && username !== 'admin') {
+                users[username].active = !users[username].active;
+                localStorage.setItem('system_users', JSON.stringify(users));
+                renderUserTable();
+            }
         }
 
         // File Handler
@@ -317,10 +422,14 @@
                     currentPage = 1;
                     renderTable();
                     
-                    document.getElementById('saveDbBtn').removeAttribute('disabled');
+                    const users = getUsersConfig();
+                    const currentUser = sessionStorage.getItem('currentUser');
+                    if (users[currentUser] && users[currentUser].role === 'admin') {
+                        document.getElementById('saveDbBtn').removeAttribute('disabled');
+                    }
                     document.getElementById('exportCsvBtn').removeAttribute('disabled');
                     document.getElementById('recordCountBadge').textContent = allData.length;
-                    alert(`Successfully loaded ${allData.length} records! Click "Save to Local DB" to store permanently.`);
+                    alert(`Successfully loaded ${allData.length} records!`);
                 } catch (err) {
                     console.error(err);
                     alert("Error parsing file. Please select a valid Excel or CSV file.");
@@ -431,6 +540,10 @@
         const STORE_NAME = "importers";
 
         function saveToDatabase() {
+            const users = getUsersConfig();
+            const currentUser = sessionStorage.getItem('currentUser');
+            if (!users[currentUser] || users[currentUser].role !== 'admin') return alert("Unauthorized action!");
+
             if (allData.length === 0) return alert("No data to save!");
             try {
                 const openReq = indexedDB.open(DB_NAME, 1);
@@ -477,7 +590,11 @@
                             allData = request.result;
                             filteredData = [...allData];
                             renderTable();
-                            document.getElementById('saveDbBtn').removeAttribute('disabled');
+                            const users = getUsersConfig();
+                            const currentUser = sessionStorage.getItem('currentUser');
+                            if (users[currentUser] && users[currentUser].role === 'admin') {
+                                document.getElementById('saveDbBtn').removeAttribute('disabled');
+                            }
                             document.getElementById('exportCsvBtn').removeAttribute('disabled');
                             document.getElementById('recordCountBadge').textContent = allData.length;
                             document.getElementById('fileNameDisplay').textContent = "Loaded from Local IndexedDB Storage";
@@ -490,6 +607,10 @@
         }
 
         function clearDatabase() {
+            const users = getUsersConfig();
+            const currentUser = sessionStorage.getItem('currentUser');
+            if (!users[currentUser] || users[currentUser].role !== 'admin') return alert("Unauthorized action!");
+
             if (!confirm("Are you sure you want to clear the local database?")) return;
             try {
                 const openReq = indexedDB.open(DB_NAME, 1);
