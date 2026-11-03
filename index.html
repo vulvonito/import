@@ -75,7 +75,7 @@
                 <div class="flex items-center gap-3">
                     <div class="hidden md:flex items-center gap-2 bg-indigo-800/60 px-3 py-1.5 rounded-lg border border-indigo-600/40 text-xs text-indigo-100">
                         <i class="fa-solid fa-user-circle text-indigo-300"></i>
-                        <span>Logged in as: <strong id="currentUserDisplay" class="text-white capitalize"></strong></span>
+                        <span>User: <strong id="currentUserDisplay" class="text-white capitalize"></strong> <span id="roleBadge" class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-indigo-900 font-semibold uppercase"></span></span>
                     </div>
                     <div id="dbStatusBadge" class="hidden sm:flex items-center gap-2 bg-indigo-800/80 px-3 py-1.5 rounded-lg border border-indigo-600/50 text-xs">
                         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -94,7 +94,8 @@
             <!-- Control Bar (File Upload & Actions) -->
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
                 <div class="flex items-center gap-3 flex-wrap">
-                    <label class="cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium px-4 py-2.5 rounded-lg border border-indigo-200 text-xs transition flex items-center gap-2 shadow-sm">
+                    <!-- Admin Only File Select Button -->
+                    <label id="fileSelectWrapper" class="cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium px-4 py-2.5 rounded-lg border border-indigo-200 text-xs transition flex items-center gap-2 shadow-sm">
                         <i class="fa-solid fa-file-excel text-emerald-600 text-base"></i>
                         <span>Select Excel / CSV File</span>
                         <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileSelect(event)">
@@ -102,7 +103,8 @@
                     <span id="fileNameDisplay" class="text-xs text-slate-500 italic">No file loaded</span>
                 </div>
 
-                <div class="flex items-center gap-2 flex-wrap">
+                <!-- Admin Controls -->
+                <div id="adminControls" class="flex items-center gap-2 flex-wrap">
                     <button onclick="saveToDatabase()" id="saveDbBtn" disabled class="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium px-4 py-2.5 rounded-lg text-xs transition flex items-center gap-2 shadow-sm">
                         <i class="fa-solid fa-floppy-disk"></i> Save to Local DB (<span id="recordCountBadge">0</span>)
                     </button>
@@ -160,7 +162,7 @@
                         <tbody id="dataTableBody" class="divide-y divide-slate-100 text-xs">
                             <tr>
                                 <td colspan="10" class="p-8 text-center text-slate-400 italic">
-                                    No database loaded. Upload an Excel/CSV file or load saved records.
+                                    No database loaded.
                                 </td>
                             </tr>
                         </tbody>
@@ -199,10 +201,11 @@
 
     <!-- Application Script -->
     <script>
-        // Clean Obfuscated Credentials (Prevents casual plain-text viewing)
+        // Accounts Configuration (Encoded passwords)
         const VALID_USERS = {
-            "user1": "cGFzc0A0NTY=", 
-            "user2": "dXNlckBwYXNz"  
+            "admin": "YWRtaW4xMjM=",  // admin / admin123
+            "user1": "cGFzc0A0NTY=",  // user1 / pass@456
+            "user2": "dXNlckBwYXNz"   // user2 / user@pass
         };
 
         let allData = [];
@@ -230,7 +233,21 @@
             if (isLoggedIn && currentUser && VALID_USERS[currentUser]) {
                 loginModal.classList.add('hidden');
                 appContainer.classList.remove('hidden');
+                
                 document.getElementById('currentUserDisplay').textContent = currentUser;
+                
+                // Configure UI based on Admin vs Standard User
+                const isAdmin = currentUser.toLowerCase() === 'admin';
+                document.getElementById('roleBadge').textContent = isAdmin ? 'Admin' : 'User';
+                
+                if (isAdmin) {
+                    document.getElementById('adminControls').classList.remove('hidden');
+                    document.getElementById('fileSelectWrapper').classList.remove('hidden');
+                } else {
+                    document.getElementById('adminControls').classList.add('hidden');
+                    document.getElementById('fileSelectWrapper').classList.add('hidden');
+                }
+
                 loadFromIndexedDB();
             } else {
                 sessionStorage.removeItem('isLoggedIn');
